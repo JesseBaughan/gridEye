@@ -1,0 +1,7 @@
+C:\Users\jesse\source\repos\WindowsApplication14\WindowsApplication14\obj\Debug\GridEyeDataCapture.csprojAssemblyReference.cache
+C:\Users\jesse\source\repos\WindowsApplication14\WindowsApplication14\obj\Debug\GridEyeDataCapture.Form1.resources
+C:\Users\jesse\source\repos\WindowsApplication14\WindowsApplication14\obj\Debug\WindowsApplication14.Properties.Resources.resources
+C:\Users\jesse\source\repos\WindowsApplication14\WindowsApplication14\obj\Debug\GridEyeDataCapture.csproj.GenerateResource.cache
+C:\Users\jesse\source\repos\WindowsApplication14\WindowsApplication14\obj\Debug\GridEyeDataCapture.csproj.CoreCompileInputs.cache
+C:\Users\jesse\source\repos\WindowsApplication14\WindowsApplication14\obj\Debug\WindowsApplication14.exe
+C:\Users\jesse\source\repos\WindowsApplication14\WindowsApplication14\obj\Debug\WindowsApplication14.pdb
