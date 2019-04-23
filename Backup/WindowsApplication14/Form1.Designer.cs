@@ -30,20 +30,19 @@ namespace WindowsApplication14
         {
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.btnStart = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
-            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
+            this.textBox2 = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(162, 79);
+            this.textBox1.Location = new System.Drawing.Point(74, 66);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(100, 20);
             this.textBox1.TabIndex = 0;
             // 
             // btnStart
             // 
-            this.btnStart.Location = new System.Drawing.Point(173, 301);
+            this.btnStart.Location = new System.Drawing.Point(87, 112);
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(75, 23);
             this.btnStart.TabIndex = 1;
@@ -51,31 +50,19 @@ namespace WindowsApplication14
             this.btnStart.UseVisualStyleBackColor = true;
             this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
             // 
-            // button1
+            // textBox2
             // 
-            this.button1.Location = new System.Drawing.Point(383, 11);
-            this.button1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(50, 19);
-            this.button1.TabIndex = 3;
-            this.button1.Text = "STOP";
-            this.button1.UseVisualStyleBackColor = true;
-            // 
-            // richTextBox1
-            // 
-            this.richTextBox1.Location = new System.Drawing.Point(79, 123);
-            this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(273, 150);
-            this.richTextBox1.TabIndex = 4;
-            this.richTextBox1.Text = "";
+            this.textBox2.Location = new System.Drawing.Point(23, 176);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.Size = new System.Drawing.Size(257, 20);
+            this.textBox2.TabIndex = 2;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(444, 374);
-            this.Controls.Add(this.richTextBox1);
-            this.Controls.Add(this.button1);
+            this.ClientSize = new System.Drawing.Size(292, 266);
+            this.Controls.Add(this.textBox2);
             this.Controls.Add(this.btnStart);
             this.Controls.Add(this.textBox1);
             this.Name = "Form1";
@@ -90,8 +77,7 @@ namespace WindowsApplication14
 
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Button btnStart;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.RichTextBox richTextBox1;
+        private System.Windows.Forms.TextBox textBox2;
     }
 }
 

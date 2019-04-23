@@ -1,64 +1,66 @@
 #include <Arduino.h>
 
-/***************************************************************************
-  This is a library for the AMG88xx GridEYE 8x8 IR camera
+const int LedPin = 13;  
+int ledState = 0;  
 
-  This sketch tries to read the pixels from the sensor
+const byte numBytes = 4;
+byte bytesToSend[numBytes] = {0x33, 0x56, 0x56, 0x33};
+byte numReceived = 0;
 
-  Designed specifically to work with the Adafruit AMG88 breakout
-  ----> http://www.adafruit.com/products/3538
+boolean dataSent = false;
+boolean firstLoop = true;
 
-  These sensors use I2C to communicate. The device's I2C address is 0x69
+void sendBytes();
 
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit andopen-source hardware by purchasing products
-  from Adafruit!
-
-  Written by Dean Miller for Adafruit Industries.
-  BSD license, all text above must be included in any redistribution
- ***************************************************************************/
-
-#include <Wire.h>
-#include <Adafruit_AMG88xx.h>
-
-Adafruit_AMG88xx amg;
-
-float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
-
-void setup() {
-    Serial.begin(9600);
-    Serial.println(F("AMG88xx pixels"));
+void setup()  
+{   
+  pinMode(LedPin, OUTPUT);  
     
-    bool status;
-    
-    // default settings
-    status = amg.begin();
-    if (!status) {
-        Serial.println("Could not find a valid AMG88xx sensor, check wiring!");
-        while (1);
-    }
-    
-    Serial.println("-- Pixels Test --");
+  Serial.begin(115200); 
+  ledState = 1;   
+}  
+  
+void loop()  
+{   
 
-    Serial.println();
-
-    delay(100); // let sensor boot up
+    sendBytes();  
+    digitalWrite(LedPin, ledState);   
+        
+    //delay(50);      
 }
 
+void sendBytes() {
+    static boolean sendInProgress = false;
+    int ndx = 0;
+    char startMarker = '1'; //ascii symbol for 1 
+    byte endMarker = 0x3E;
+    char rb;
+   
+    while (Serial.available() > 0 && dataSent == false) {  
+      
+        rb = Serial.read(); 
+        
+        if (sendInProgress == true) {
+            if (ndx < 1 ) {
+                Serial.write(bytesToSend,4);
+                Serial.write("\n");
+                Serial.flush();
+                ledState = 0;  
+                digitalWrite(LedPin, ledState);  
+               
+               // receivedBytes[ndx] = rb;
+                ndx++;
+            }
+            else {
+                sendInProgress = false;
+                numReceived = ndx;  // save the number for use when printing
+                ndx = 0;
+                dataSent = true;
+            }
+        }
 
-void loop() { 
-    //read all the pixels
-    amg.readPixels(pixels);
-
-    Serial.print("[");
-    for(int i=1; i<=AMG88xx_PIXEL_ARRAY_SIZE; i++){
-      Serial.print(pixels[i-1]);
-      Serial.print(", ");
-      if( i%8 == 0 ) Serial.println();
+        else if (rb == startMarker) {
+            sendInProgress = true;  
+        }
     }
-    Serial.println("]");
-    Serial.println();
-
-    //delay a second
-    delay(1000);
 }

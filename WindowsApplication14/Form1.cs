@@ -19,7 +19,7 @@ namespace WindowsApplication14
         private delegate void SetTextDeleg(string text);
 
         public Form1()
-       {
+        {
             InitializeComponent();
         }
 
@@ -36,18 +36,19 @@ namespace WindowsApplication14
             serialPort.WriteTimeout = 500;
             serialPort.Open();
 
-            dataInThread = new Thread(DoThisAllTheTime);
-            dataInThread.Start();
+            //dataInThread = new Thread(DoThisAllTheTime);
+           // dataInThread.Start();
         }
 
         public void DoThisAllTheTime()
-        { 
+        {
             try
             {
                 while (true)
                 {
                     //you need to use Invoke because the new thread can't access the UI elements directly
-                    MethodInvoker mi = delegate () {
+                    MethodInvoker mi = delegate ()
+                    {
                         this.Text = DateTime.Now.ToString();
                         serialPort.Write("2");
                         //Thread.Sleep(5000);
@@ -65,7 +66,7 @@ namespace WindowsApplication14
         private void button1_Click(object sender, EventArgs e)
         {
             Thread.Sleep(2000);
-            dataInThread.Abort();
+            //dataInThread.Abort();
         }
 
         private void btnStart_Click(object sender, EventArgs e)
@@ -94,7 +95,7 @@ namespace WindowsApplication14
             }
 
             Thread.Sleep(2000);
-            dataInThread.Abort();
+            //dataInThread.Abort();
         }
 
         void sp_DataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -107,6 +108,7 @@ namespace WindowsApplication14
         private void si_DataReceived(string data)
         {
             textBox1.Text = data.Trim();
+            richTextBox1.Text = data.Trim(); // test with larger textbox
         }
     }
 }
