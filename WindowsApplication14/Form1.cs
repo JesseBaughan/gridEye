@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Text;
 using System.Windows.Forms;
 using System.IO.Ports;
@@ -12,58 +13,185 @@ namespace WindowsApplication14
 {
     public partial class Form1 : Form
     {
-        //the colors we will be using
-        static readonly UInt16 [] camColors = {0x480F,
-        0x400F,0x400F,0x400F,0x4010,0x3810,0x3810,0x3810,0x3810,0x3010,0x3010,
-        0x3010,0x2810,0x2810,0x2810,0x2810,0x2010,0x2010,0x2010,0x1810,0x1810,
-        0x1811,0x1811,0x1011,0x1011,0x1011,0x0811,0x0811,0x0811,0x0011,0x0011,
-        0x0011,0x0011,0x0011,0x0031,0x0031,0x0051,0x0072,0x0072,0x0092,0x00B2,
-        0x00B2,0x00D2,0x00F2,0x00F2,0x0112,0x0132,0x0152,0x0152,0x0172,0x0192,
-        0x0192,0x01B2,0x01D2,0x01F3,0x01F3,0x0213,0x0233,0x0253,0x0253,0x0273,
-        0x0293,0x02B3,0x02D3,0x02D3,0x02F3,0x0313,0x0333,0x0333,0x0353,0x0373,
-        0x0394,0x03B4,0x03D4,0x03D4,0x03F4,0x0414,0x0434,0x0454,0x0474,0x0474,
-        0x0494,0x04B4,0x04D4,0x04F4,0x0514,0x0534,0x0534,0x0554,0x0554,0x0574,
-        0x0574,0x0573,0x0573,0x0573,0x0572,0x0572,0x0572,0x0571,0x0591,0x0591,
-        0x0590,0x0590,0x058F,0x058F,0x058F,0x058E,0x05AE,0x05AE,0x05AD,0x05AD,
-        0x05AD,0x05AC,0x05AC,0x05AB,0x05CB,0x05CB,0x05CA,0x05CA,0x05CA,0x05C9,
-        0x05C9,0x05C8,0x05E8,0x05E8,0x05E7,0x05E7,0x05E6,0x05E6,0x05E6,0x05E5,
-        0x05E5,0x0604,0x0604,0x0604,0x0603,0x0603,0x0602,0x0602,0x0601,0x0621,
-        0x0621,0x0620,0x0620,0x0620,0x0620,0x0E20,0x0E20,0x0E40,0x1640,0x1640,
-        0x1E40,0x1E40,0x2640,0x2640,0x2E40,0x2E60,0x3660,0x3660,0x3E60,0x3E60,
-        0x3E60,0x4660,0x4660,0x4E60,0x4E80,0x5680,0x5680,0x5E80,0x5E80,0x6680,
-        0x6680,0x6E80,0x6EA0,0x76A0,0x76A0,0x7EA0,0x7EA0,0x86A0,0x86A0,0x8EA0,
-        0x8EC0,0x96C0,0x96C0,0x9EC0,0x9EC0,0xA6C0,0xAEC0,0xAEC0,0xB6E0,0xB6E0,
-        0xBEE0,0xBEE0,0xC6E0,0xC6E0,0xCEE0,0xCEE0,0xD6E0,0xD700,0xDF00,0xDEE0,
-        0xDEC0,0xDEA0,0xDE80,0xDE80,0xE660,0xE640,0xE620,0xE600,0xE5E0,0xE5C0,
-        0xE5A0,0xE580,0xE560,0xE540,0xE520,0xE500,0xE4E0,0xE4C0,0xE4A0,0xE480,
-        0xE460,0xEC40,0xEC20,0xEC00,0xEBE0,0xEBC0,0xEBA0,0xEB80,0xEB60,0xEB40,
-        0xEB20,0xEB00,0xEAE0,0xEAC0,0xEAA0,0xEA80,0xEA60,0xEA40,0xF220,0xF200,
-        0xF1E0,0xF1C0,0xF1A0,0xF180,0xF160,0xF140,0xF100,0xF0E0,0xF0C0,0xF0A0,
-        0xF080,0xF060,0xF040,0xF020,0xF800,};
-
-        int minTemp = 22, maxTemp = 34;
-        int gridEyePixelArraySize = 64;
-        float delayTime;
-        float[] pixels = new float[64];
-        int displayPixelWidth, displayPixelHeight;
-
         SerialPort serialPort;
         Thread dataInThread; //create a thread for continuous data capture
 
+        string pixelValueString;
+        float[] pixelValues = new float[64];
+
         // delegate is used to write to a UI control from a non-UI thread
         private delegate void SetTextDeleg(string text);
+        //private delegate void DrawHeatMap(Graphics g);
 
         public Form1()
         {
             InitializeComponent();
+            this.BackColor = Color.White;
+            this.Width = 1600;
+            this.Height = 1000;
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            DrawObjects(g);
+            g.Dispose();
+        }
+
+        private void DrawObjects(Graphics g)
+        {
+            ColorMap cm = new ColorMap();
+            Random rand = new Random();
+            int[,] cmap = cm.Jet();
+            int x0 = 10;
+            int y0 = 10;
+            int width = 85;
+            int height = 85;
+            PointC[,] pts = new PointC[8, 8];
+            int p = 0;
+
+            for (int i = 0; i < 64; i++){
+                pixelValues[i] = Remap(pixelValues[i],22,27,0,255);
+            }
+
+
+            for (int i = 0; i < 8; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    pts[i, j] = new PointC(new PointF(x0 + width*j, y0 + height*i), pixelValues[p]);
+                    p += 1;
+                }
+            }
+           
+            float cmin = 0;
+            float cmax = 255;
+            int colorLength = cmap.GetLength(0);
+
+            // Original color map:
+            for (int i = 0; i < 8; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    int cindex = (int)Math.Round((colorLength * (pts[i, j].C - cmin) +
+                        (cmax - pts[i, j].C)) / (cmax - cmin));
+                    if (cindex < 1)
+                        cindex = 1;
+                    if (cindex > colorLength)
+                        cindex = colorLength;
+                    for (int k = 0; k < 4; k++)
+                    {
+                        pts[i, j].ARGBArray[k] = cmap[cindex - 1, k];
+                    }
+                }
+            }
+
+            for (int i = 0; i < 7; i++)
+            {
+                for (int j = 0; j < 7; j++)
+                {
+                    SolidBrush aBrush = new SolidBrush(Color.FromArgb(pts[i, j].ARGBArray[0],
+                        pts[i, j].ARGBArray[1], pts[i, j].ARGBArray[2], pts[i, j].ARGBArray[3]));
+                    PointF[] pta = new PointF[4]{pts[i,j].pointf, pts[i+1,j].pointf,
+                        pts[i+1,j+1].pointf, pts[i,j+1].pointf};
+                    g.FillPolygon(aBrush, pta);
+                    aBrush.Dispose();
+                }
+            }
+            g.DrawString("Direct Color Map", this.Font, Brushes.Black, 50, 190);
+
+            // Bilinear interpolation:
+            //Create new points shifted over to the right of first drawing
+            x0 = x0 + 700; 
+            p = 0;
+            for (int i = 0; i < 8; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    pts[i, j] = new PointC(new PointF(x0 + width * j, y0 + height * i), pixelValues[p]);
+                    p += 1;
+                }
+            }
+
+            for (int i = 0; i < 7; i++)
+            {
+                for (int j = 0; j < 7; j++)
+                {
+                    PointF[] pta = new PointF[4]{pts[i,j].pointf, pts[i+1,j].pointf,
+                        pts[i+1,j+1].pointf, pts[i,j+1].pointf};
+                    float[] cdata = new float[4]{pts[i,j].C,pts[i+1,j].C,
+                        pts[i+1,j+1].C,pts[i,j+1].C};
+                    Interp(g, pta, cdata, 125);
+                }
+            }
+            g.DrawString("Interpolated Color Map", this.Font, Brushes.Black, 740, 190);
+        }
+
+        private void Interp(Graphics g, PointF[] pta, float[] cData, int npoints)
+        {
+            PointC[,] pts = new PointC[npoints + 1, npoints + 1];
+            float x0 = pta[0].X;
+            float x1 = pta[3].X;
+            float y0 = pta[0].Y;
+            float y1 = pta[1].Y;
+            float dx = (x1 - x0) / npoints;
+            float dy = (y1 - y0) / npoints;
+            float C00 = cData[0];
+            float C10 = cData[1];
+            float C11 = cData[2];
+            float C01 = cData[3];
+
+            for (int i = 0; i <= npoints; i++)
+            {
+                float x = x0 + i * dx;
+                for (int j = 0; j <= npoints; j++)
+                {
+                    float y = y0 + j * dy;
+                    float C = (y1 - y) * ((x1 - x) * C00 +
+                                     (x - x0) * C10) / (x1 - x0) / (y1 - y0) +
+                                     (y - y0) * ((x1 - x) * C01 +
+                                     (x - x0) * C11) / (x1 - x0) / (y1 - y0);
+                    pts[j, i] = new PointC(new PointF(x, y), C);
+                }
+            }
+
+            ColorMap cm = new ColorMap();
+            int[,] cmap = cm.Jet();
+            float cmin = 0;           float cmax = 255;
+            int colorLength = cmap.GetLength(0);
+            for (int i = 0; i <= npoints; i++)
+            {
+                for (int j = 0; j <= npoints; j++)
+                {
+                    int cindex = (int)Math.Round((colorLength * (pts[i, j].C - cmin) +
+                        (cmax - pts[i, j].C)) / (cmax - cmin));
+                    if (cindex < 1)
+                        cindex = 1;
+                    if (cindex > colorLength)
+                        cindex = colorLength;
+                    for (int k = 0; k < 4; k++)
+                    {
+                        pts[j, i].ARGBArray[k] = cmap[cindex - 1, k];
+                    }
+                }
+            }
+
+            for (int i = 0; i < npoints; i++)
+            {
+                for (int j = 0; j < npoints; j++)
+                {
+                    SolidBrush aBrush = new SolidBrush(Color.FromArgb(pts[i, j].ARGBArray[0],
+                        pts[i, j].ARGBArray[1], pts[i, j].ARGBArray[2], pts[i, j].ARGBArray[3]));
+                    PointF[] points = new PointF[4]{pts[i,j].pointf, pts[i+1,j].pointf,
+                        pts[i+1,j+1].pointf, pts[i,j+1].pointf};
+                    g.FillPolygon(aBrush, points);
+                    aBrush.Dispose();
+                }
+            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // all of the options for a serial device
-            // can be sent through the constructor of the SerialPort class
-            // PortName = "COM1", Baud Rate = 19200, Parity = None, 
-            // Data Bits = 8, Stop Bits = One, Handshake = None
             serialPort = new SerialPort("COM3", 115200, Parity.None, 8, StopBits.One);
             serialPort.Handshake = Handshake.None;
             serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
@@ -104,7 +232,7 @@ namespace WindowsApplication14
             //dataInThread.Abort();
         }
 
-        private void btnStart_Click(object sender, EventArgs e)
+        private void btnStart_Click_1(object sender, EventArgs e)
         {
             // Makes sure serial port is open before trying to write
             try
@@ -137,12 +265,8 @@ namespace WindowsApplication14
         {
             byte[] highByte = new byte[64];
             byte[] lowByte = new byte[64];
-            var pixel = new float[64];
-            UInt16 pixelValueInt = 0;
-            int bytesSent = 64;
-
-            string data = "";
-            string pixelDat = "";
+            //string pixelValueString;
+            //float[] pixelValues;
 
             Thread.Sleep(500);
 
@@ -150,24 +274,74 @@ namespace WindowsApplication14
             serialPort.Read(highByte, 0, 64);
             serialPort.Read(lowByte, 0, 64);
 
-            //Convert from bytes back to float values
-            for (int i = 1; i <= bytesSent; i++)
-            {
-                pixelValueInt = (UInt16)(highByte[i-1] * 256 + lowByte[i-1]);
-                pixel[i-1] = (float)(pixelValueInt / 100.0);
+            pixelValueString = bytesToString(highByte, lowByte);
+            pixelValues = bytesToFloat(highByte, lowByte);
 
-                pixelDat = pixel[i-1].ToString();
+            //Have to use invoke as we are calling the method from a non-primary thread
+            this.BeginInvoke(new SetTextDeleg(si_DataReceived), new object[] { pixelValueString });
+            //this.BeginInvoke(new DrawHeatMap(DrawObjects), new object[] { Graphics g});
+
+        }
+
+        string bytesToString(byte[] highByte, byte[] lowByte)
+        {
+            int numBytesSent = highByte.Length;
+            UInt16 integerPixelVal = 0;
+            var pixel = new float[numBytesSent];
+
+            string data = "";
+            string pixelDat = "";
+
+            //Convert from bytes back to float values
+            for (int i = 1; i <= numBytesSent; i++)
+            {
+                integerPixelVal = (UInt16)(highByte[i - 1] * 256 + lowByte[i - 1]);
+                pixel[i - 1] = (float)(integerPixelVal / 100.0);
+
+                pixelDat = pixel[i - 1].ToString();
                 data = data + " " + pixelDat;
                 if (i % 8 == 0) { data = data + "\n"; }
             }
 
-            //Have to use invoke as we are calling the method from a non-primary thread
-            this.BeginInvoke(new SetTextDeleg(si_DataReceived), new object[] { data });
+            return data;
+        }
+
+        float[] bytesToFloat(byte[] highByte, byte[] lowByte)
+        {
+            int numBytesSent = highByte.Length;
+            UInt16 integerPixelVal = 0;
+            var pixel = new float[numBytesSent];
+
+            //Convert from bytes back to float values
+            for (int i = 0; i < numBytesSent; i++)
+            {
+                integerPixelVal = (UInt16)(highByte[i] * 256 + lowByte[i]);
+                pixel[i] = (float)(integerPixelVal / 100.0); 
+            }
+
+            return pixel;
+        }
+
+        float Remap(float from, float fromMin, float fromMax, int toMin, int toMax)
+        {
+            var fromAbs = from - fromMin;
+            var fromMaxAbs = fromMax - fromMin;
+
+            var normal = fromAbs / fromMaxAbs;
+
+            var toMaxAbs = toMax - toMin;
+            var toAbs = toMaxAbs * normal;
+
+            var to = toAbs + toMin;
+
+            return to;
         }
 
         private void si_DataReceived(string data)
-        {  
-            richTextBox1.Text = data.Trim(); // test with larger textbox
+        {
+            //richTextBox1.Text = data.Trim(); // test with larger textbox
+            Invalidate();
         }
+
     }
 }

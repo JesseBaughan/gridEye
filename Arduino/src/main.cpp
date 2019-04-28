@@ -11,7 +11,7 @@ boolean dataTransferComplete = false;
 float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
 
 void sendSerialData();
-void writeIntAsBinary(int value);
+void sendHighLowBytes(); 
 
 void setup()  
 {  
@@ -43,36 +43,33 @@ void loop()  {
 }
 
 void sendSerialData() {
-    static boolean sendInProgress = false;
-    static boolean first = true;
     char startMarker = '1'; //ascii symbol for 1 
     char dataReceived;
-    uint16_t pixelInt;
-    byte highBytes[64], lowBytes[64];
-    byte byteArray[2][64];
-    
-//    //while 
+     
     while (Serial.available() > 0 && dataTransferComplete == false) { 
-  
-       dataReceived = Serial.read();   
-    
+        dataReceived = Serial.read();   
         if (dataReceived == startMarker) {
-            ledState = 1;  
-            digitalWrite(LedPin, ledState);
-            for(int i=0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++){
-                //convert from float to int, will need to convert back once host receives
-                pixelInt = uint16_t(pixels[i] * 100);
-                highBytes[i] = pixelInt / 256;
-                lowBytes[i] = pixelInt % 256;
-            }  
-            Serial.write(highBytes,64);
-            Serial.write(lowBytes,64);
-            //Serial.flush();
-            dataTransferComplete == true;
-            ledState = 0;  
-            digitalWrite(LedPin, ledState);
+            sendHighLowBytes();
+            dataTransferComplete == true;    
         }
+        ledState = !ledState;  
+        digitalWrite(LedPin, ledState);
     }
+}
+
+void sendHighLowBytes() {
+    byte highBytes[64], lowBytes[64];
+    uint16_t integerPixelVal;
+
+    for(int i=0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++){
+        //convert from float to int, will need to convert back once host receives
+        integerPixelVal = uint16_t(pixels[i] * 100);
+        highBytes[i] = integerPixelVal / 256;
+        lowBytes[i] = integerPixelVal % 256;
+    }  
+    Serial.write(highBytes,64);
+    Serial.write(lowBytes,64);
+    //Serial.flush();
 }
 
 
