@@ -15,9 +15,12 @@ namespace WindowsApplication14
     {
         SerialPort serialPort;
         Thread dataInThread; //create a thread for continuous data capture
+        private System.Windows.Forms.Timer timer1;
 
         string pixelValueString;
         float[] pixelValues = new float[64];
+
+        private int counter;
 
         // delegate is used to write to a UI control from a non-UI thread
         private delegate void SetTextDeleg(string text);
@@ -29,6 +32,33 @@ namespace WindowsApplication14
             this.BackColor = Color.White;
             this.Width = 1600;
             this.Height = 1000;
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            serialPort = new SerialPort("COM3", 115200, Parity.None, 8, StopBits.One);
+            serialPort.Handshake = Handshake.None;
+            serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
+            serialPort.ReadTimeout = 500;
+            serialPort.WriteTimeout = 500;
+            serialPort.Open();
+
+            InitTimer();
+
+            //dataInThread = new Thread(DoThisAllTheTime);
+        }
+
+        public void InitTimer()
+        {
+            timer1 = new System.Windows.Forms.Timer();
+            timer1.Tick += new EventHandler(timer1_Tick);
+            timer1.Interval = 7000; // in miliseconds
+            timer1.Start();
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            serialPort.Write("1");
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -50,11 +80,12 @@ namespace WindowsApplication14
             PointC[,] pts = new PointC[8, 8];
             int p = 0;
 
+            //Remap float values to uint8 range 0-255
             for (int i = 0; i < 64; i++){
                 pixelValues[i] = Remap(pixelValues[i],22,27,0,255);
             }
 
-
+            //Create new points used for interpolation
             for (int i = 0; i < 8; i++)
             {
                 for (int j = 0; j < 8; j++)
@@ -68,7 +99,7 @@ namespace WindowsApplication14
             float cmax = 255;
             int colorLength = cmap.GetLength(0);
 
-            // Original color map:
+            // Create original pixelated color map:
             for (int i = 0; i < 8; i++)
             {
                 for (int j = 0; j < 8; j++)
@@ -86,6 +117,7 @@ namespace WindowsApplication14
                 }
             }
 
+            //Draw the image
             for (int i = 0; i < 7; i++)
             {
                 for (int j = 0; j < 7; j++)
@@ -100,7 +132,8 @@ namespace WindowsApplication14
             }
             g.DrawString("Direct Color Map", this.Font, Brushes.Black, 50, 190);
 
-            // Bilinear interpolation:
+            // Perform Bilinear interpolation:
+
             //Create new points shifted over to the right of first drawing
             x0 = x0 + 700; 
             p = 0;
@@ -112,7 +145,7 @@ namespace WindowsApplication14
                     p += 1;
                 }
             }
-
+            //Draw new image
             for (int i = 0; i < 7; i++)
             {
                 for (int j = 0; j < 7; j++)
@@ -190,41 +223,28 @@ namespace WindowsApplication14
             }
         }
 
-        private void Form1_Load(object sender, EventArgs e)
-        {
-            serialPort = new SerialPort("COM3", 115200, Parity.None, 8, StopBits.One);
-            serialPort.Handshake = Handshake.None;
-            serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
-            serialPort.ReadTimeout = 500;
-            serialPort.WriteTimeout = 500;
-            serialPort.Open();
-
-            //dataInThread = new Thread(DoThisAllTheTime);
-           // dataInThread.Start();
-        }
-
-        public void DoThisAllTheTime()
-        {
-            try
-            {
-                while (true)
-                {
-                    //you need to use Invoke because the new thread can't access the UI elements directly
-                    MethodInvoker mi = delegate ()
-                    {
-                        this.Text = DateTime.Now.ToString();
-                        serialPort.Write("2");
-                        //Thread.Sleep(5000);
-                    };
-                    this.Invoke(mi);
-                    Thread.Sleep(1000);
-                }
-            }
-            catch (ThreadAbortException abortException)
-            {
-                Console.WriteLine((string)abortException.ExceptionState);
-            }
-        }
+        //public void DoThisAllTheTime()
+        //{
+        //    try
+        //    {
+        //        while (true)
+        //        {
+        //            //you need to use Invoke because the new thread can't access the UI elements directly
+        //            MethodInvoker mi = delegate ()
+        //            {
+        //                this.Text = DateTime.Now.ToString();
+        //                serialPort.Write("1");
+        //                Thread.Sleep(5000);
+        //            };
+        //            this.Invoke(mi);
+        //            //Thread.Sleep(1000);
+        //        }
+        //    }
+        //    catch (ThreadAbortException abortException)
+        //    {
+        //        Console.WriteLine((string)abortException.ExceptionState);
+        //    }
+        //}
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -242,7 +262,8 @@ namespace WindowsApplication14
                     serialPort.Open();
                 }
 
-                serialPort.Write("1");
+                //dataInThread.Start();
+                //serialPort.Write("1");
             }
             catch (Exception ex)
             {
@@ -258,7 +279,7 @@ namespace WindowsApplication14
             }
 
             Thread.Sleep(2000);
-            //dataInThread.Abort();
+            dataInThread.Abort();
         }
 
         void sp_DataReceived(object sender, SerialDataReceivedEventArgs e)
