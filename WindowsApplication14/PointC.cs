@@ -14,7 +14,6 @@ namespace WindowsApplication14
 
         public PointC()
         {
-
         }
 
         public PointC(PointF ptf, float c)

@@ -1,0 +1,11 @@
+C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\bin\Debug\Blobs.exe.config
+C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\bin\Debug\Blobs.exe
+C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\bin\Debug\Blobs.pdb
+C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\bin\Debug\AForge.xml
+C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\bin\Debug\AForge.Imaging.xml
+C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\bin\Debug\AForge.Math.xml
+C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\obj\Debug\Blobs.csprojAssemblyReference.cache
+C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\obj\Debug\Blobs.csproj.CoreCompileInputs.cache
+C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\obj\Debug\Blobs.csproj.CopyComplete
+C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\obj\Debug\Blobs.exe
+C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\obj\Debug\Blobs.pdb
