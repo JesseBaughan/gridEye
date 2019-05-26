@@ -88,9 +88,10 @@ namespace WindowsApplication14
             g.Dispose();
             thermalImage.Save("thermalImage.png");
 
+            seatOccupancy = DetectBlobs();
             Bitmap tableOccupancyImage = new Bitmap(formWidth - 600, formHeight - 200);
             Graphics f = Graphics.FromImage(tableOccupancyImage);
-            CreateCurrentTableOccupancyImg(f, seatOccupancy);
+            CreateTableOccupancyImg(f, seatOccupancy);
             f.Dispose();
             pictureBox1.Image = tableOccupancyImage;
             tableOccupancyImage.Save("table.png");
@@ -112,6 +113,10 @@ namespace WindowsApplication14
             int p = 0;
             float minTemp = pixelValues.Min();
             float maxTemp = pixelValues.Max();
+            //float minTemp = 20.1f;
+            //float maxTemp = 29.2f;
+
+            textBox3.Text = "MIN" + minTemp.ToString() + " " + "MAX" + maxTemp.ToString();
 
             pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
             pictureBox1.Location = new System.Drawing.Point(0, 0);
@@ -261,7 +266,7 @@ namespace WindowsApplication14
 
         bool[] DetectBlobs()
         {
-            Bitmap im1 = AForge.Imaging.Image.FromFile(@"C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\testImage.png");
+            Bitmap im1 = AForge.Imaging.Image.FromFile(@"C:\Users\jesse\Documents\WindowsApplication14\WindowsApplication14\bin\Debug\thermalImage.png");
 
             //get image dimension
             int width = im1.Width;
@@ -271,25 +276,16 @@ namespace WindowsApplication14
 
             bool[] occupancy = new bool[4];
 
-            //red green blue image
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    //get pixel value
-                    Color p = im1.GetPixel(x, y);
+            ColorFiltering filter = new ColorFiltering();
+            // set color ranges to keep
+            filter.Red = new IntRange(80, 255);
+            filter.Green = new IntRange(0, 180);
+            filter.Blue = new IntRange(0, 50);
+            // apply the filter
+            filter.ApplyInPlace(im1);
 
-                    //extract ARGB value from p
-                    int a = p.A;
-                    int r = p.R;
-                    //int g = p.G;
-                    //int b = p.B;
-
-                    //set red image pixel
-                    rbmp.SetPixel(x, y, Color.FromArgb(a, r, 0, 0));
-
-                }
-            }
+            
+            im1.Save(@"C:\Users\jesse\Documents\WindowsApplication14\WindowsApplication14\bin\Debug\" + "thresholdedImg" + ".png");
 
             //threshold & find blobs
             BlobCounter counter = new BlobCounter();
@@ -300,17 +296,21 @@ namespace WindowsApplication14
             //determine output values
             float[] outputX = new float[blobs.Length];
             float[] outputY = new float[blobs.Length];
+
+            
             for (int i = 0; i < blobs.Length; i++)
             {
-                if (blobs[i].Area > 100)
+                textBox2.Text = blobs[i].Area.ToString();
+
+                if (blobs[i].Area > 200 && blobs[i].Area < 15000)
                 {
                     // If you want to output the image of each blob with reference to the rest of the image
                     Bitmap output = blobs[i].Image.ToManagedImage();
-                    output.Save(@"C:\Users\jorgo\OneDrive\Documents\EGB340\Blobs\Blobs\Blobs\OutputBlobs\" + i.ToString() + ".png");
+                    output.Save(@"C:\Users\jesse\Documents\WindowsApplication14\WindowsApplication14\bin\Debug\" + "blobNumer" + " " + i.ToString() + ".png");
                     blobCount += 1;
                     outputX[i] = blobs[i].CenterOfGravity.X;
                     outputY[i] = blobs[i].CenterOfGravity.Y;
-                    Console.WriteLine("X: " + outputX[i].ToString() + " Y: " + outputX[i].ToString());
+                    textBox2.Text = "Blobs: " + blobCount + " Area:" + blobs[i].Area + " " + "X: " + outputX[i].ToString() + " Y: " + outputX[i].ToString();
                 }
             }
 
@@ -322,11 +322,25 @@ namespace WindowsApplication14
         bool[] NumPeopleAtTable(int blobCount, float[] outputX, float[] outputY)
         {
             bool[] tableOccupancy = new bool[4];
+            if (blobCount > 0)
+            {
+                for (int i = 0; i < blobCount; i++)
+                {
+                    if ((int)Math.Round(outputX[i]) > 0 && (int)Math.Round(outputY[i]) > 0)
+                    {
+                        tableOccupancy[0] = true;
+                    }
+                }
+            }
+
+            tableOccupancy[1] = false;
+            tableOccupancy[2] = false;
+            tableOccupancy[3] = false;
 
             return tableOccupancy;
         }
 
-        void CreateCurrentTableOccupancyImg(Graphics f, bool[] seatOccupied)
+        void CreateTableOccupancyImg(Graphics f, bool[] seatOccupied)
         {
             int pictureBoxWidth = pictureBox1.Size.Width;
             int pictureBoxHeight = pictureBox1.Size.Height;
@@ -443,6 +457,12 @@ namespace WindowsApplication14
             this.BeginInvoke(new SetTextDeleg(si_DataReceived), new object[] { audioLevelString });
         }
 
+        private void si_DataReceived(string data)
+        {
+            richTextBox1.Text = data.Trim(); // test with larger textbox
+            Invalidate();
+        }
+
         string bytesToString(byte[] highByte, byte[] lowByte)
         {
             int numBytesSent = highByte.Length;
@@ -480,15 +500,10 @@ namespace WindowsApplication14
             return pixel;
         }
 
-        private void si_DataReceived(string data)
-        {
-            richTextBox1.Text = data.Trim(); // test with larger textbox
-            Invalidate();
-        }
-
         private void button1_Click_1(object sender, EventArgs e)
         {
-            timer1.Start();       //Start getting data once requested
+            //timer1.Start();       //Start getting data once requested
+            serialPort.Write("1"); 
         }
 
         private void richTextBox1_TextChanged(object sender, EventArgs e)
