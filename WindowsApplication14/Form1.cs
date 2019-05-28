@@ -19,6 +19,8 @@ namespace WindowsApplication14
 {
     public partial class Form1 : Form
     {
+        bool testing = false;
+
         SerialPort serialPort;
         private System.Windows.Forms.Timer timer1;
 
@@ -43,15 +45,24 @@ namespace WindowsApplication14
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            serialPort = new SerialPort("COM14", 115200, Parity.None, 8, StopBits.One);
-            serialPort.Handshake = Handshake.None;
-            serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
-            serialPort.ReadTimeout = 500;
-            serialPort.WriteTimeout = 500;
-            serialPort.Open();
+            if (testing)
+            {
+                InitTimer();
+                pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+            }
+            else
+            {
+                serialPort = new SerialPort("COM14", 115200, Parity.None, 8, StopBits.One);
+                serialPort.Handshake = Handshake.None;
+                serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
+                serialPort.ReadTimeout = 500;
+                serialPort.WriteTimeout = 500;
+                serialPort.Open();
 
-            InitTimer();
-            pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+                InitTimer();
+                pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+            }
+
         }
 
         //private void Form1_SizeChanged(object sender, EventArgs e)
@@ -76,8 +87,14 @@ namespace WindowsApplication14
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            serialPort.Write("1");        //commented out for testing without serial
-            //Invalidate();
+            if (testing)
+            {
+                Invalidate();
+            }
+            else
+            {
+                serialPort.Write("1");        //commented out for testing without serial
+            }
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -112,14 +129,12 @@ namespace WindowsApplication14
             PointC[,] pts = new PointC[8, 8];
             int p = 0;
             float minTemp = pixelValues.Min();
-            float maxTemp = pixelValues.Max();
-            //float minTemp = 20.1f;
-            //float maxTemp = 29.2f;
+            float maxTemp = pixelValues.Max()+5;
 
             textBox3.Text = "MIN" + minTemp.ToString() + " " + "MAX" + maxTemp.ToString();
 
             pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
-            pictureBox1.Location = new System.Drawing.Point(0, 0);
+            pictureBox1.Location = new System.Drawing.Point(20, 20); //CHECKOUT THIS LINE?? DOES IT MOVE THE PICTURE BOX??
 
             //Remap float values to uint8 range 0-255
             for (int i = 0; i < 64; i++){
@@ -178,7 +193,7 @@ namespace WindowsApplication14
                         pts[i+1,j+1].pointf, pts[i,j+1].pointf};
                     float[] cdata = new float[4]{pts[i,j].C,pts[i+1,j].C,
                         pts[i+1,j+1].C,pts[i,j+1].C};
-                    Interp(g, pta, cdata, 50);
+                    Interp(g, pta, cdata, 100);
                 }
             }     
 
@@ -277,9 +292,10 @@ namespace WindowsApplication14
             bool[] occupancy = new bool[4];
 
             ColorFiltering filter = new ColorFiltering();
+
             // set color ranges to keep
-            filter.Red = new IntRange(80, 255);
-            filter.Green = new IntRange(0, 180);
+            filter.Red = new IntRange(50, 255);
+            filter.Green = new IntRange(0, 100);
             filter.Blue = new IntRange(0, 50);
             // apply the filter
             filter.ApplyInPlace(im1);
@@ -290,8 +306,8 @@ namespace WindowsApplication14
             //threshold & find blobs
             BlobCounter counter = new BlobCounter();
             counter.BackgroundThreshold = Color.FromArgb(210, 255, 255);
-            counter.ProcessImage(rbmp);
-            Blob[] blobs = counter.GetObjects(rbmp, true);
+            counter.ProcessImage(im1);
+            Blob[] blobs = counter.GetObjects(im1, true);
 
             //determine output values
             float[] outputX = new float[blobs.Length];
