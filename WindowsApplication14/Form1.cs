@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -19,7 +19,7 @@ namespace WindowsApplication14
 {
     public partial class Form1 : Form
     {
-        bool testing = false;
+        bool testing = true;
 
         SerialPort serialPort;
         private System.Windows.Forms.Timer timer1;
@@ -28,10 +28,9 @@ namespace WindowsApplication14
         int formHeight = Screen.PrimaryScreen.Bounds.Height;
 
         string audioLevelString;
+        string soundLevel;
         float[] pixelValues = new float[64];
 
-        struct BlobData { public int blobCount;
-                          public float[,] blobCoords; };
         bool[] seatOccupancy = { false, false, true, false };
 
         private delegate void SetTextDeleg(string text);
@@ -65,19 +64,6 @@ namespace WindowsApplication14
 
         }
 
-        //private void Form1_SizeChanged(object sender, EventArgs e)
-        //{
-        //    string formwidths = this.Width.ToString();
-        //    int formwidth = Int32.Parse(formwidths);
-        //    string formheights = this.Height.ToString();
-        //    int formheight = Int32.Parse(formheights);
-        //    int finalx = formwidth / 2 + 76;
-        //    int finaly = formheight / 12;
-        //    int[] widthHeight = new int[2];
-        //    widthHeight[1] = formwidth;
-        //    widthHeight[2] = formheight;
-        //}
-
         public void InitTimer()
         {
             timer1 = new System.Windows.Forms.Timer();
@@ -99,24 +85,47 @@ namespace WindowsApplication14
 
         protected override void OnPaint(PaintEventArgs e)
         {
+            bool badReading;
+            string searchQuery = comboBox1.SelectedText + " " + textBox1.Text + " " + radioButton1.Text;
+            //string numSeatsWanted = textBox1.Text;
+            //string soundPreference = radioButton1.Text;
+
             Bitmap thermalImage = new Bitmap(256, 256);
             Graphics g = Graphics.FromImage(thermalImage);
             CreateThermalImage(g);
             g.Dispose();
             thermalImage.Save("thermalImage.png");
+            pictureBox2.Image = thermalImage;
 
             seatOccupancy = DetectBlobs();
-            Bitmap tableOccupancyImage = new Bitmap(formWidth - 600, formHeight - 200);
-            Graphics f = Graphics.FromImage(tableOccupancyImage);
-            CreateTableOccupancyImg(f, seatOccupancy);
-            f.Dispose();
-            pictureBox1.Image = tableOccupancyImage;
-            tableOccupancyImage.Save("table.png");
+            badReading = seatOccupancy[4];
+            string seatsAvailable = (seatOccupancy.Where(c => c).Count()).ToString();
 
-            Bitmap mainUIContainer = new Bitmap(formWidth, formHeight);
-            Graphics h = Graphics.FromImage(mainUIContainer);
-            DrawMainUILayout(h);
-            pictureBox2.Image = mainUIContainer;
+            if (badReading)
+            {
+                serialPort.Write("1");
+            }
+            else
+            {
+                Bitmap tableOccupancyImage = new Bitmap(formWidth - 600, formHeight - 200);
+                Graphics f = Graphics.FromImage(tableOccupancyImage);
+                CreateTableOccupancyImg(f, seatOccupancy);
+                f.Dispose();
+                pictureBox1.Image = tableOccupancyImage;
+                if (searchQuery.Contains(seatsAvailable) && searchQuery.Contains(soundLevel))
+                {
+                    label7.Visible = true;
+                    label7.Text = "✔";
+                    label7.ForeColor = Color.MediumSeaGreen;
+                }
+                else
+                {
+                    label7.Visible = true;
+                    label7.Text = "✖";
+                    label7.ForeColor = Color.Red;
+                }
+                tableOccupancyImage.Save("table.png");
+            }
         }
 
         private void CreateThermalImage(Graphics g)
@@ -129,12 +138,12 @@ namespace WindowsApplication14
             PointC[,] pts = new PointC[8, 8];
             int p = 0;
             float minTemp = pixelValues.Min();
-            float maxTemp = pixelValues.Max()+5;
+            float maxTemp = pixelValues.Max();
 
             textBox3.Text = "MIN" + minTemp.ToString() + " " + "MAX" + maxTemp.ToString();
 
             pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
-            pictureBox1.Location = new System.Drawing.Point(20, 20); //CHECKOUT THIS LINE?? DOES IT MOVE THE PICTURE BOX??
+            pictureBox1.Location = new System.Drawing.Point(40, 90); //CHECKOUT THIS LINE?? DOES IT MOVE THE PICTURE BOX??
 
             //Remap float values to uint8 range 0-255
             for (int i = 0; i < 64; i++){
@@ -289,23 +298,24 @@ namespace WindowsApplication14
             int blobCount = 0;
             Bitmap rbmp = new Bitmap(im1);
 
-            bool[] occupancy = new bool[4];
+            bool[] occupancy = new bool[5];
 
             ColorFiltering filter = new ColorFiltering();
 
             // set color ranges to keep
             filter.Red = new IntRange(50, 255);
-            filter.Green = new IntRange(0, 100);
-            filter.Blue = new IntRange(0, 50);
+            filter.Green = new IntRange(0, 200);
+            filter.Blue = new IntRange(0, 60);
             // apply the filter
             filter.ApplyInPlace(im1);
+            pictureBox3.Image = im1;
 
             
             im1.Save(@"C:\Users\jesse\Documents\WindowsApplication14\WindowsApplication14\bin\Debug\" + "thresholdedImg" + ".png");
 
             //threshold & find blobs
             BlobCounter counter = new BlobCounter();
-            counter.BackgroundThreshold = Color.FromArgb(210, 255, 255);
+            //counter.BackgroundThreshold = Color.FromArgb(255, 255, 255);
             counter.ProcessImage(im1);
             Blob[] blobs = counter.GetObjects(im1, true);
 
@@ -318,7 +328,7 @@ namespace WindowsApplication14
             {
                 textBox2.Text = blobs[i].Area.ToString();
 
-                if (blobs[i].Area > 200 && blobs[i].Area < 15000)
+                if (blobs[i].Area > 50 && blobs[i].Area < 15000)
                 {
                     // If you want to output the image of each blob with reference to the rest of the image
                     Bitmap output = blobs[i].Image.ToManagedImage();
@@ -331,40 +341,75 @@ namespace WindowsApplication14
             }
 
             occupancy = NumPeopleAtTable(blobCount, outputX, outputY);
+
+            label4.Visible = true;
+            label4.Text = "SEATS AVAILABLE: " + (4-blobCount).ToString();
+
             return occupancy;
         }
 
 
         bool[] NumPeopleAtTable(int blobCount, float[] outputX, float[] outputY)
         {
-            bool[] tableOccupancy = new bool[4];
+            int imageSize = 256;
+            bool[] tableOccupancy = new bool[5];
+            tableOccupancy[4] = false;
+            tableOccupancy[0] = false;
+            tableOccupancy[1] = false;
+            tableOccupancy[2] = false;
+            tableOccupancy[3] = false;
+            richTextBox2.Clear();
+
             if (blobCount > 0)
             {
                 for (int i = 0; i < blobCount; i++)
                 {
-                    if ((int)Math.Round(outputX[i]) > 0 && (int)Math.Round(outputY[i]) > 0)
+                    if (outputX[i] == 0 | outputY[i] == 0)
+                    {
+                        tableOccupancy[4] = true;
+                    }
+                    int blobXcoord = (int)Math.Round(outputX[i]);
+                    int blobYcoord = (int)Math.Round(outputY[i]);
+
+                    //string coords = blobXcoord.ToString() + "\t" + blobYcoord.ToString() + "\n";
+
+                    richTextBox2.AppendText(outputX[i].ToString() + "\t" + outputY[i].ToString() + "\n");
+
+                    //Top left
+                    if (blobXcoord > 0 && blobXcoord < imageSize / 2 && blobYcoord > 0 && blobYcoord < imageSize / 2)
                     {
                         tableOccupancy[0] = true;
                     }
+                    //Top right
+                    if (blobXcoord > imageSize / 2 && blobXcoord < imageSize && blobYcoord > 0 && blobYcoord < imageSize / 2)
+                    {
+                        tableOccupancy[2] = true;
+                    }
+                    //Bottom left
+                    if (blobXcoord > 0 && blobXcoord < imageSize / 2 && blobYcoord > imageSize / 2 && blobYcoord < imageSize)
+                    {
+                        tableOccupancy[1] = true;
+
+                    }
+                    //Bottom right
+                    if (blobXcoord > imageSize / 2 && blobXcoord < imageSize && blobYcoord > imageSize / 2 && blobYcoord < imageSize)
+                    {
+                        tableOccupancy[3] = true;
+                    }
                 }
             }
-
-            tableOccupancy[1] = false;
-            tableOccupancy[2] = false;
-            tableOccupancy[3] = false;
-
+            
             return tableOccupancy;
         }
 
         void CreateTableOccupancyImg(Graphics f, bool[] seatOccupied)
         {
-            int pictureBoxWidth = pictureBox1.Size.Width;
-            int pictureBoxHeight = pictureBox1.Size.Height;
+            int pictureBoxWidth = (pictureBox1.Size.Width);
+            int pictureBoxHeight = (pictureBox1.Size.Height);
            
-
-            int[] table1CenterLoc = { (pictureBoxWidth / 2), (pictureBoxHeight / 2) };
+            int[] table1CenterLoc = { ((pictureBoxWidth- 50) / 2), ((pictureBoxHeight-50) / 2) };
             DrawTable(f, table1CenterLoc, seatOccupied);
-            
+
             //Draw a border
             f.DrawRectangle(new Pen(Brushes.LightGray, 2), new Rectangle(0, 0, pictureBoxWidth, pictureBoxHeight));
         }
@@ -386,6 +431,7 @@ namespace WindowsApplication14
             f.DrawRectangle(new Pen(Brushes.DarkGray, 5), table1CenterLoc[0] - 200, table1CenterLoc[1] - 300, 400, 600);
             table1.Dispose();
 
+            //Top left
             if (seatOccupied[0] == true)
             {
                 DrawChair(f, Color.Red, chairLocationsXY[0,0], chairLocationsXY[0,1]);
@@ -395,7 +441,7 @@ namespace WindowsApplication14
                 DrawChair(f, Color.Green, chairLocationsXY[0, 0], chairLocationsXY[0, 1]);
             }
 
-
+            //Bottom left
             if (seatOccupied[1] == true)
             {
                 DrawChair(f, Color.Red, chairLocationsXY[1, 0], chairLocationsXY[1, 1]);
@@ -405,7 +451,7 @@ namespace WindowsApplication14
                 DrawChair(f, Color.Green, chairLocationsXY[1, 0], chairLocationsXY[1, 1]);
             }
 
-
+            //Top right
             if (seatOccupied[2] == true)
             {
                 DrawChair(f, Color.Red, chairLocationsXY[2, 0], chairLocationsXY[2, 1]);
@@ -415,7 +461,7 @@ namespace WindowsApplication14
                 DrawChair(f, Color.Green, chairLocationsXY[2, 0], chairLocationsXY[2, 1]);
             }
 
-
+            //B0ttom right
             if (seatOccupied[3] == true)
             {
                 DrawChair(f, Color.Red, chairLocationsXY[3, 0], chairLocationsXY[3, 1]);
@@ -475,7 +521,18 @@ namespace WindowsApplication14
 
         private void si_DataReceived(string data)
         {
-            richTextBox1.Text = data.Trim(); // test with larger textbox
+
+            if (data == "H")
+            {
+                soundLevel = "HIGH";
+            }
+            else
+            {
+                soundLevel = "LOW";
+            }
+            label3.Visible = true;
+            label3.Text = "SOUND LEVEL: " + soundLevel; // test with larger textbox
+            label3.Refresh();
             Invalidate();
         }
 
@@ -518,28 +575,7 @@ namespace WindowsApplication14
 
         private void button1_Click_1(object sender, EventArgs e)
         {
-            //timer1.Start();       //Start getting data once requested
-            serialPort.Write("1"); 
-        }
-
-        private void richTextBox1_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label2_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label5_Click(object sender, EventArgs e)
-        {
-
+            serialPort.Write("1");  
         }
 
         void Form1_FormClosed(object sender, FormClosedEventArgs e)

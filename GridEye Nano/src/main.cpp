@@ -55,10 +55,12 @@ void setup()
 }
 
 void loop()  {
-    gridEye.readPixels(pixels);
     GetAvgSoundLevel();
     dataRequested = checkDataRequest();
-    if (dataRequested) {TransferSerialData();}
+    if (dataRequested) {
+        gridEye.readPixels(pixels);
+        TransferSerialData();
+    }
     delay(10);
 }
 
@@ -84,9 +86,8 @@ void GetAvgSoundLevel() {
     else {
         audioHighLow = 'L';
     }
-    //Serial.println(average); 
+
     delay(1); // delay in between reads for stability
-    
 }
 
 double RMS_Voltage() {  
@@ -136,11 +137,11 @@ bool checkDataRequest() {
 }
 
 void TransferSerialData() {
-            sendGridEyeData();
-            sendAudioData();
-            dataRequested = false;
-            ledState = 0;  //toggle LED so we can see data transfer
-            digitalWrite(LedPin, ledState);
+    sendGridEyeData();
+    sendAudioData();
+    dataRequested = false;
+    ledState = 0;  //toggle LED so we can see data transfer
+    digitalWrite(LedPin, ledState);
 }
 
 void sendGridEyeData() {
