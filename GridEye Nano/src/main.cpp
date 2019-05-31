@@ -5,25 +5,25 @@
 Adafruit_AMG88xx gridEye;
 
 #define micInputPin 3
+
 // audio sampling
 const int sampleWindow = 50; // Sample window width in mS (50 mS = 20Hz). 
 unsigned int sample; // instantenous sample 
 char audioHighLow;
-
-// output averaging  
 const int numReadings = 20; // length of averaging array. Increase for further "smoothing"
 int readings[numReadings]; // the readings from the analog input
 int readIndex = 0; // the index of the current reading
 int total = 0; // the running total
 double average = 0; // averaged output
 
-const int LedPin = 13;
-int ledState = 1;
 bool dataTransferComplete = false;
 bool dataRequested = false;
 
 float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
+const int LedPin = 13;
+int ledState = 1;
 
+//Function definitions
 bool checkDataRequest();
 void GetAvgSoundLevel() ;
 void sendGridEyeData();
@@ -87,7 +87,7 @@ void GetAvgSoundLevel() {
         audioHighLow = 'L';
     }
 
-    delay(1); // delay in between reads for stability
+    delay(1);
 }
 
 double RMS_Voltage() {  
@@ -98,7 +98,6 @@ double RMS_Voltage() {
   double voltsRMS; // value to be returned
    
    while (millis() - startMillis < sampleWindow)  { // collect data for 50 mS
-  
       sample = analogRead(micInputPin);
       if (sample < 1024)  // keep values less than 1024
       {
@@ -124,9 +123,9 @@ bool checkDataRequest() {
     while (Serial.available() > 0) {
         dataReceived = Serial.read();
         if (dataReceived == startMarker) {
-            ledState = !ledState;  //toggle LED so we can see data transfer
-            digitalWrite(LedPin, ledState);
             dataRequested = true;
+            ledState = !ledState;  //toggle LED so we can see data transfer
+            digitalWrite(LedPin, ledState);   
         }
         else {
             dataRequested = false;
@@ -140,6 +139,7 @@ void TransferSerialData() {
     sendGridEyeData();
     sendAudioData();
     dataRequested = false;
+    
     ledState = 0;  //toggle LED so we can see data transfer
     digitalWrite(LedPin, ledState);
 }
@@ -161,9 +161,9 @@ void sendAudioData() {
 void intToBytes(byte *highBytes, byte *lowBytes, float data[], int length){
         uint16_t integerVal[AMG88xx_PIXEL_ARRAY_SIZE];
         for (int i=0;i<length;i++){
-            integerVal[i] = uint16_t(pixels[i] * 100);
-            highBytes[i] = integerVal[i] / 256;
-            lowBytes[i] = integerVal[i] % 256;
+            integerVal[i] = uint16_t(pixels[i] * 100);  //Convert float to int
+            highBytes[i] = highByte(integerVal[i]);        
+            lowBytes[i] = lowByte(integerVal[i]);          
         }
 }
 

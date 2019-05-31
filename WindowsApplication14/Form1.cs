@@ -19,7 +19,7 @@ namespace WindowsApplication14
 {
     public partial class Form1 : Form
     {
-        bool testing = true;
+        bool testing = false;
 
         SerialPort serialPort;
         private System.Windows.Forms.Timer timer1;
@@ -29,6 +29,7 @@ namespace WindowsApplication14
 
         string audioLevelString;
         string soundLevel;
+        string soundLevelRadioButton;
         float[] pixelValues = new float[64];
 
         bool[] seatOccupancy = { false, false, true, false };
@@ -86,7 +87,7 @@ namespace WindowsApplication14
         protected override void OnPaint(PaintEventArgs e)
         {
             bool badReading;
-            string searchQuery = comboBox1.SelectedText + " " + textBox1.Text + " " + radioButton1.Text;
+            string searchQuery = comboBox1.SelectedText + " " + textBox1.Text + " " + soundLevelRadioButton;
             //string numSeatsWanted = textBox1.Text;
             //string soundPreference = radioButton1.Text;
 
@@ -99,7 +100,8 @@ namespace WindowsApplication14
 
             seatOccupancy = DetectBlobs();
             badReading = seatOccupancy[4];
-            string seatsAvailable = (seatOccupancy.Where(c => c).Count()).ToString();
+            int seatsUnoccupied = 4-((seatOccupancy).Where(c => c).Count());
+            string seatsAvailable = seatsUnoccupied.ToString();
 
             if (badReading)
             {
@@ -112,6 +114,7 @@ namespace WindowsApplication14
                 CreateTableOccupancyImg(f, seatOccupancy);
                 f.Dispose();
                 pictureBox1.Image = tableOccupancyImage;
+
                 if (searchQuery.Contains(seatsAvailable) && searchQuery.Contains(soundLevel))
                 {
                     label7.Visible = true;
@@ -124,7 +127,10 @@ namespace WindowsApplication14
                     label7.Text = "✖";
                     label7.ForeColor = Color.Red;
                 }
+
                 tableOccupancyImage.Save("table.png");
+                label4.Visible = true;
+                label4.Text = "SEATS AVAILABLE: " + seatsAvailable;
             }
         }
 
@@ -341,10 +347,6 @@ namespace WindowsApplication14
             }
 
             occupancy = NumPeopleAtTable(blobCount, outputX, outputY);
-
-            label4.Visible = true;
-            label4.Text = "SEATS AVAILABLE: " + (4-blobCount).ToString();
-
             return occupancy;
         }
 
@@ -352,12 +354,16 @@ namespace WindowsApplication14
         bool[] NumPeopleAtTable(int blobCount, float[] outputX, float[] outputY)
         {
             int imageSize = 256;
-            bool[] tableOccupancy = new bool[5];
-            tableOccupancy[4] = false;
-            tableOccupancy[0] = false;
-            tableOccupancy[1] = false;
-            tableOccupancy[2] = false;
-            tableOccupancy[3] = false;
+            bool[] seatOccupied = new bool[5];
+            seatOccupied[4] = false;
+            seatOccupied[0] = false;
+            seatOccupied[1] = false;
+            seatOccupied[2] = false;
+            seatOccupied[3] = false;
+
+            int blobXcoord;
+            int blobYcoord;
+
             richTextBox2.Clear();
 
             if (blobCount > 0)
@@ -366,40 +372,39 @@ namespace WindowsApplication14
                 {
                     if (outputX[i] == 0 | outputY[i] == 0)
                     {
-                        tableOccupancy[4] = true;
+                        seatOccupied[4] = true;
                     }
-                    int blobXcoord = (int)Math.Round(outputX[i]);
-                    int blobYcoord = (int)Math.Round(outputY[i]);
-
-                    //string coords = blobXcoord.ToString() + "\t" + blobYcoord.ToString() + "\n";
+                    blobXcoord = (int)Math.Round(outputX[i]);
+                    blobYcoord = (int)Math.Round(outputY[i]);
 
                     richTextBox2.AppendText(outputX[i].ToString() + "\t" + outputY[i].ToString() + "\n");
 
                     //Top left
                     if (blobXcoord > 0 && blobXcoord < imageSize / 2 && blobYcoord > 0 && blobYcoord < imageSize / 2)
                     {
-                        tableOccupancy[0] = true;
+                        seatOccupied[0] = true;
                     }
                     //Top right
                     if (blobXcoord > imageSize / 2 && blobXcoord < imageSize && blobYcoord > 0 && blobYcoord < imageSize / 2)
                     {
-                        tableOccupancy[2] = true;
+                        seatOccupied[2] = true;
                     }
                     //Bottom left
                     if (blobXcoord > 0 && blobXcoord < imageSize / 2 && blobYcoord > imageSize / 2 && blobYcoord < imageSize)
                     {
-                        tableOccupancy[1] = true;
+                        seatOccupied[1] = true;
 
                     }
                     //Bottom right
                     if (blobXcoord > imageSize / 2 && blobXcoord < imageSize && blobYcoord > imageSize / 2 && blobYcoord < imageSize)
                     {
-                        tableOccupancy[3] = true;
+                        seatOccupied[3] = true;
                     }
                 }
             }
-            
-            return tableOccupancy;
+
+            //string coords = blobXcoord.ToString() + "\t" + blobYcoord.ToString() + "\n";
+            return seatOccupied;
         }
 
         void CreateTableOccupancyImg(Graphics f, bool[] seatOccupied)
@@ -524,11 +529,11 @@ namespace WindowsApplication14
 
             if (data == "H")
             {
-                soundLevel = "HIGH";
+                soundLevel = "LOUD";
             }
             else
             {
-                soundLevel = "LOW";
+                soundLevel = "QUIET";
             }
             label3.Visible = true;
             label3.Text = "SOUND LEVEL: " + soundLevel; // test with larger textbox
@@ -584,6 +589,16 @@ namespace WindowsApplication14
             {
                 serialPort.Close();
             }
+        }
+
+        private void radioButton1_CheckedChanged(object sender, EventArgs e)
+        {
+            soundLevelRadioButton = "LOUD";
+        }
+
+        private void radioButton2_CheckedChanged(object sender, EventArgs e)
+        {
+            soundLevelRadioButton = "QUIET";
         }
     }
 }
